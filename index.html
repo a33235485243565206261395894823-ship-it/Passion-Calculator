@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8" />
+    <title>Passion Calculator v3.0</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+
+#gate-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#gate-overlay button {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 1rem 3rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    width: auto;
+    margin: 0;
+    transition: background 0.2s, color 0.2s;
+}
+#gate-overlay button:hover { background: var(--accent); color: var(--bg); }
+#gate-overlay button::after { display: none; }
+
+        :root {
+            --bg: #0e0c0a;
+            --surface: #1a1713;
+            --border: #2e2a24;
+            --accent: #c8a96e;
+            --accent-glow: rgba(200, 169, 110, 0.15);
+            --text: #f0ead8;
+            --muted: #7a7060;
+            --error: #e07a5f;
+            --error-glow: rgba(224, 122, 95, 0.15);
+            --code-bg: #111009;
+            --code-green: #7ec897;
+            --code-blue: #79b8ff;
+            --code-orange: #ffab70;
+            --code-purple: #b392f0;
+            --code-red: #f97583;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 80%, rgba(200,169,110,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 60% at 80% 20%, rgba(224,122,95,0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Clicker Counter ── */
+        #clicker-counter {
+            position: fixed;
+            top: 1rem;
+            right: 1.2rem;
+            z-index: 999;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            pointer-events: none;
+        }
+
+        /* ── Card ── */
+        .card {
+            position: relative;
+            width: clamp(340px, 90vw, 860px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: clamp(1.8rem, 4vw, 3.5rem);
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+            z-index: 1;
+        }
+
+        .card::before,
+        .card::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+        .card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .tag {
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .tag::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        .divider { height: 1px; background: var(--border); margin: 1.5rem 0 2rem; }
+
+        /* ── Fields ── */
+        .field { margin-bottom: 1.4rem; }
+
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
+        }
+
+        .field-label-text {
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .weight-row {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.2rem;
+            flex-shrink: 0;
+        }
+
+        .weight-label {
+            font-size: 0.52rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .weight-input {
+            width: 3.2rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-bottom: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            padding: 0.2rem 0.3rem;
+            outline: none;
+            text-align: center;
+            -moz-appearance: textfield;
+            appearance: textfield;
+            transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+
+        .weight-input::-webkit-inner-spin-button,
+        .weight-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .weight-input:focus { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+        .score-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .score-input::-webkit-inner-spin-button,
+        .score-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .score-input::placeholder { color: var(--border); font-weight: 300; }
+        .score-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+        .score-input.error {
+            border-color: var(--error) !important;
+            box-shadow: 0 0 0 3px var(--error-glow) !important;
+            animation: shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-6px); }
+            40%       { transform: translateX(6px); }
+            60%       { transform: translateX(-4px); }
+            80%       { transform: translateX(4px); }
+        }
+
+        .weight-bar { height: 3px; background: var(--border); margin-top: 0.4rem; overflow: hidden; }
+        .weight-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ── Buttons ── */
+        button {
+            width: 100%;
+            margin-top: 0.6rem;
+            padding: 1rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        button::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0); transition: background 0.2s; }
+        button:hover { opacity: 0.9; }
+        button:hover::after { background: rgba(255,255,255,0.08); }
+        button:active { transform: scale(0.99); }
+
+        .result-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+
+        .btn-secondary {
+            flex: 1;
+            margin-top: 0 !important;
+            padding: 0.6rem !important;
+            background: transparent !important;
+            color: var(--muted) !important;
+            border: 1px solid var(--border) !important;
+            font-size: 0.65rem !important;
+            letter-spacing: 0.15em;
+            transition: color 0.2s, border-color 0.2s !important;
+        }
+        .btn-secondary:hover { color: var(--text) !important; border-color: var(--accent) !important; opacity: 1 !important; }
+
+        /* ── Result ── */
+        .result {
+            margin-top: 1.8rem;
+            padding: 1.4rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            display: none;
+            animation: reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .result.visible { display: block; }
+
+        .result-label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+        .result-score { font-family: 'Playfair Display', serif; font-size: 3.2rem; font-weight: 700; color: var(--accent); line-height: 1; letter-spacing: -0.02em; }
+        .result-breakdown { margin-top: 0.8rem; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.05em; line-height: 1.8; }
+        .result-breakdown span { color: var(--text); }
+
+        /* ── Footer ── */
+        .footer-note { margin-top: 2rem; font-size: 0.58rem; color: var(--accent); letter-spacing: 0.1em; text-align: center; }
+
+        .footer-link {
+            color: var(--accent);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'DM Mono', monospace;
+            font-size: inherit;
+            letter-spacing: inherit;
+            padding: 0;
+            width: auto;
+            margin-top: 0;
+            text-transform: uppercase;
+            transition: opacity 0.2s;
+            display: inline;
+        }
+        .footer-link:hover { opacity: 0.75; }
+        .footer-link::after { display: none; }
+
+        /* ── Modals ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+        .modal {
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            width: min(640px, 100%);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(16px);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.open .modal { transform: translateY(0); }
+
+        .modal::before, .modal::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+        .modal::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .modal::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .modal-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+        .modal-close {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            width: auto;
+            margin-top: 0;
+            padding: 0.3rem 0.6rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+            text-transform: uppercase;
+        }
+        .modal-close::after { display: none; }
+        .modal-close:hover { color: var(--text); border-color: var(--accent); opacity: 1; }
+
+        .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+        .modal-body::-webkit-scrollbar { width: 4px; }
+        .modal-body::-webkit-scrollbar-track { background: var(--bg); }
+        .modal-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+        .license-text { font-size: 0.68rem; color: var(--muted); line-height: 1.9; letter-spacing: 0.02em; }
+        .license-text strong { color: var(--text); font-weight: 500; }
+
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            padding: 1.2rem 1.4rem;
+            overflow-x: auto;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            line-height: 1.75;
+            white-space: pre;
+            color: var(--text);
+        }
+        .c-tag   { color: var(--code-red); }
+        .c-attr  { color: var(--code-orange); }
+        .c-val   { color: var(--code-green); }
+        .c-kw    { color: var(--code-purple); }
+        .c-fn    { color: var(--code-blue); }
+        .c-str   { color: var(--code-green); }
+        .c-punct { color: var(--muted); }
+
+        /* ── Bouncy ── */
+        .bouncy {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            z-index: 500;
+            border-radius: 4px;
+            object-fit: cover;
+            user-select: none;
+            -webkit-user-drag: none;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+            transition: transform 0.1s;
+        }
+        .bouncy:hover { transform: scale(1.1); }
+
+        /* ── Freeze Overlay ── */
+        #freeze-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #000;
+        }
+        #freeze-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            display: block;
+        }
+        #freeze-overlay.active { display: block; }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script>
+
+function resumePage() {
+    document.getElementById("gate-overlay").style.display = "none";
+    document.body.style.overflow = "";
+    // restart spawn interval from where it left off
+    if (!spawnInterval) {
+        spawnInterval = setInterval(spawnBouncy, 2500);
+    }
+    // resume all bouncer animations
+    bouncers.forEach(b => {
+        if (!b.rafId) {
+            (function reAnimate(bouncer) {
+                const size = 80;
+                function animate() {
+                    bouncer.x += bouncer.vx;
+                    bouncer.y += bouncer.vy;
+                    const mxX = window.innerWidth  - size;
+                    const mxY = window.innerHeight - size;
+                    if (bouncer.x <= 0)   { bouncer.x = 0;   bouncer.vx =  Math.abs(bouncer.vx); }
+                    if (bouncer.x >= mxX) { bouncer.x = mxX; bouncer.vx = -Math.abs(bouncer.vx); }
+                    if (bouncer.y <= 0)   { bouncer.y = 0;   bouncer.vy =  Math.abs(bouncer.vy); }
+                    if (bouncer.y >= mxY) { bouncer.y = mxY; bouncer.vy = -Math.abs(bouncer.vy); }
+                    bouncer.el.style.left = bouncer.x + "px";
+                    bouncer.el.style.top  = bouncer.y + "px";
+                    bouncer.rafId = requestAnimationFrame(animate);
+                }
+                bouncer.rafId = requestAnimationFrame(animate);
+            })(b);
+        }
+    });
+}
+
+
+function openSecretAuth() {
+    const code = prompt("Authentication Code:");
+    if (code === "OompaLoompa") {
+        clearInterval(spawnInterval);
+        bouncers.forEach(b => {
+            cancelAnimationFrame(b.rafId);
+            if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
+        });
+        bouncers.length = 0;
+        document.getElementById("clicker-counter").style.display = "none";
+    }
+}
+
+        /* ══════════════════════════════════
+           SOURCE PROTECTION
+           Intercepts right-click and Ctrl+U
+        ══════════════════════════════════ */
+        document.addEventListener("contextmenu", e => e.preventDefault());
+
+document.addEventListener("keydown", e => {
+    const isCtrlU = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u";
+    if (isCtrlU) {
+        e.preventDefault();
+        clearInterval(spawnInterval);
+        bouncers.forEach(b => { cancelAnimationFrame(b.rafId); if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el); });
+        bouncers.length = 0;
+        document.body.style.overflow = "hidden";
+        const overlay = document.getElementById("freeze-overlay");
+        overlay.querySelector("img").src = "evil.png";
+        overlay.classList.add("active");
+    }
+});
+
+        /* ══════════════════════════════════
+           BOUNCY SYSTEM
+        ══════════════════════════════════ */
+        let clickCount   = 0;
+        let spawnInterval = null;
+        const bouncers   = [];
+        const SPEED_BASE = 6.5; // 25% slower than original ~2.0
+
+        function updateCounter() {
+            document.getElementById("clicker-counter").textContent =
+                "Gharadaghian Clicker: " + clickCount;
+        }
+
+        function triggerFreeze() {
+            clearInterval(spawnInterval);
+            bouncers.forEach(b => {
+                cancelAnimationFrame(b.rafId);
+                if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
+            });
+            bouncers.length = 0;
+            document.body.style.overflow = "hidden";
+
+            const overlay = document.getElementById("freeze-overlay");
+            // Show evil.png if 10 clicks reached, otherwise bouncy.png
+            const img = overlay.querySelector("img");
+            img.src = (clickCount >= 10) ? "evil.png" : "bouncy.png";
+            overlay.classList.add("active");
+        }
+
+        function spawnBouncy() {
+            const size = 80;
+            const img  = document.createElement("img");
+            img.src       = "bouncy.png";
+            img.className = "bouncy";
+            img.draggable = false;
+
+            // Random starting position (fully within viewport)
+            const maxX = window.innerWidth  - size;
+            const maxY = window.innerHeight - size;
+            let x = Math.random() * maxX;
+            let y = Math.random() * maxY;
+
+            // Random direction (angle) and speed within ±25% of base
+            const angle   = Math.random() * 2 * Math.PI;
+            const speedVar = SPEED_BASE * (0.75 + Math.random() * 0.5); // 75%–125% of base
+            let vx = Math.cos(angle) * speedVar;
+            let vy = Math.sin(angle) * speedVar;
+
+            // Ensure neither component is near zero (avoid axis-locked motion)
+            if (Math.abs(vx) < 0.4) vx = 0.4 * Math.sign(vx) || 0.4;
+            if (Math.abs(vy) < 0.4) vy = 0.4 * Math.sign(vy) || 0.4;
+
+            img.style.left = x + "px";
+            img.style.top  = y + "px";
+
+const bouncer = { el: img, rafId: null, x, y, vx, vy };
+
+            img.addEventListener("click", () => {
+                cancelAnimationFrame(bouncer.rafId);
+                if (img.parentNode) img.parentNode.removeChild(img);
+                const idx = bouncers.indexOf(bouncer);
+                if (idx !== -1) bouncers.splice(idx, 1);
+                clickCount++;
+                updateCounter();
+                if (clickCount >= 10) triggerFreeze();
+            });
+
+            document.body.appendChild(img);
+            bouncers.push(bouncer);
+
+            function animate() {
+                x += vx;
+                y += vy;
+                const mxX = window.innerWidth  - size;
+                const mxY = window.innerHeight - size;
+                if (x <= 0)   { x = 0;   vx =  Math.abs(vx); }
+                if (x >= mxX) { x = mxX; vx = -Math.abs(vx); }
+                if (y <= 0)   { y = 0;   vy =  Math.abs(vy); }
+                if (y >= mxY) { y = mxY; vy = -Math.abs(vy); }
+                img.style.left = x + "px";
+                img.style.top  = y + "px";
+                bouncer.rafId = requestAnimationFrame(animate);
+            }
+            bouncer.rafId = requestAnimationFrame(animate);
+        }
+
+        /* ══════════════════════════════════
+           WEIGHT / SCORE FUNCTIONS
+        ══════════════════════════════════ */
+        function formatWeight(el) {
+            let v = parseFloat(el.value);
+            if (isNaN(v)) return;
+            v = Math.min(99.99, Math.max(0, v));
+            el.value = v.toFixed(2);
+        }
+
+        function updateBars() {
+            const fw = parseFloat(document.getElementById("formative-weight").value) || 0;
+            const sw = parseFloat(document.getElementById("summative-weight").value) || 0;
+            document.getElementById("bar-formative").style.width  = Math.min(1, Math.max(0, fw)) * 100 + "%";
+            document.getElementById("bar-summative").style.width  = Math.min(1, Math.max(0, sw)) * 100 + "%";
+        }
+
+        let counterAnim = null;
+        function animateCounter(targetVal, suffix) {
+            const el = document.getElementById("text");
+            if (counterAnim) cancelAnimationFrame(counterAnim);
+            const duration = 600;
+            const start = performance.now();
+            function step(now) {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                el.textContent = (targetVal * eased).toFixed(2) + suffix;
+                if (progress < 1) counterAnim = requestAnimationFrame(step);
+            }
+            counterAnim = requestAnimationFrame(step);
+        }
+
+        function flashError(id) {
+            const el = document.getElementById(id);
+            el.classList.remove("error");
+            void el.offsetWidth;
+            el.classList.add("error");
+            setTimeout(() => el.classList.remove("error"), 600);
+        }
+
+        function app() {
+            const fRaw = document.getElementById("formative").value;
+            const sRaw = document.getElementById("summative").value;
+            let hasError = false;
+            if (fRaw === "") { flashError("formative"); hasError = true; }
+            if (sRaw === "") { flashError("summative"); hasError = true; }
+            if (hasError) return;
+
+            let fv = Math.max(0, parseFloat(fRaw) || 0);
+            let sv = Math.max(0, parseFloat(sRaw) || 0);
+            const fw = parseFloat(document.getElementById("formative-weight").value) || 0;
+            const sw = parseFloat(document.getElementById("summative-weight").value) || 0;
+            const score = fv * fw + sv * sw;
+
+            document.getElementById("breakdown").innerHTML =
+                `Formative &nbsp;<span>${fv.toFixed(2)}</span> × ${fw.toFixed(2)} = <span>${(fv*fw).toFixed(2)}%</span><br>` +
+                `Summative &nbsp;<span>${sv.toFixed(2)}</span> × ${sw.toFixed(2)} = <span>${(sv*sw).toFixed(2)}%</span>`;
+
+            document.getElementById("result").classList.add("visible");
+            animateCounter(score, "%");
+            document.getElementById("copy-btn").textContent = "Copy";
+        }
+
+        function clearAll() {
+            document.getElementById("formative").value = "";
+            document.getElementById("summative").value = "";
+            document.getElementById("formative-weight").value = "0.20";
+            document.getElementById("summative-weight").value = "0.80";
+            updateBars();
+            document.getElementById("result").classList.remove("visible");
+        }
+
+        function copyScore() {
+            const score = document.getElementById("text").textContent;
+            navigator.clipboard.writeText(score).then(() => {
+                const btn = document.getElementById("copy-btn");
+                btn.textContent = "Copied";
+                setTimeout(() => btn.textContent = "Copy", 1500);
+            });
+        }
+
+        /* ══════════════════════════════════
+           MODALS
+        ══════════════════════════════════ */
+        function openModal(id) {
+            document.getElementById(id).classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        /* ══════════════════════════════════
+           INIT
+        ══════════════════════════════════ */
+        document.addEventListener("DOMContentLoaded", () => {
+            updateCounter();
+
+// Block page until Start is clicked
+document.body.style.overflow = "hidden";
+
+// Pause/resume on visibility change
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        // Pause: stop interval and all animations
+        clearInterval(spawnInterval);
+        spawnInterval = null;
+        bouncers.forEach(b => {
+            cancelAnimationFrame(b.rafId);
+            b.rafId = null;
+        });
+        // Show Resume overlay
+        const gate = document.getElementById("gate-overlay");
+        gate.style.display = "flex";
+        document.getElementById("gate-btn").textContent = "Resume";
+        document.body.style.overflow = "hidden";
+    }
+    // Don't auto-resume — wait for button click
+});
+
+            // First spawn after 5 seconds, then every 5 seconds after
+            setTimeout(() => {
+                spawnBouncy();
+                spawnInterval = setInterval(spawnBouncy, 2500);
+            }, 5000);
+
+            // Backdrop close
+            document.querySelectorAll(".modal-overlay").forEach(overlay => {
+                overlay.addEventListener("click", e => {
+                    if (e.target === overlay) closeModal(overlay.id);
+                });
+            });
+
+            // Enter → calculate
+            document.querySelectorAll(".score-input, .weight-input").forEach(input => {
+                input.addEventListener("keydown", e => { if (e.key === "Enter") app(); });
+            });
+        });
+    </script>
+</head>
+<body>
+
+    <!-- ── Clicker Counter ── -->
+    <div id="clicker-counter">Gharadaghian Clicker: 0</div>
+
+    <!-- ── Main Card ── -->
+    <div class="card">
+        <div class="tag">v3.0 &nbsp;·&nbsp; Passion Analyzer</div>
+        <h1>Passion<br>Calculator</h1>
+        <div class="divider"></div>
+
+        <div class="field">
+            <div class="field-header">
+                <span class="field-label-text">Formative Score</span>
+                <div class="weight-row">
+                    <span class="weight-label">Weight ×</span>
+                    <input type="number" id="formative-weight" class="weight-input" value="0.20" min="0" max="99.99" step="0.01"
+                        onchange="formatWeight(this); updateBars();" oninput="updateBars();" />
+                </div>
+            </div>
+            <input type="number" id="formative" class="score-input" placeholder="0 – 100" min="0" />
+            <div class="weight-bar"><div class="weight-bar-fill" id="bar-formative" style="width: 20%"></div></div>
+        </div>
+
+        <div class="field">
+            <div class="field-header">
+                <span class="field-label-text">Summative Score</span>
+                <div class="weight-row">
+                    <span class="weight-label">Weight ×</span>
+                    <input type="number" id="summative-weight" class="weight-input" value="0.80" min="0" max="99.99" step="0.01"
+                        onchange="formatWeight(this); updateBars();" oninput="updateBars();" />
+                </div>
+            </div>
+            <input type="number" id="summative" class="score-input" placeholder="0 – 100" min="0" />
+            <div class="weight-bar"><div class="weight-bar-fill" id="bar-summative" style="width: 80%"></div></div>
+        </div>
+
+        <button onclick="app()">Calculate Passion Score</button>
+
+        <div class="result" id="result">
+            <div class="result-label">Your Passion Score</div>
+            <div class="result-score" id="text">—</div>
+            <div class="result-breakdown" id="breakdown"></div>
+            <div class="result-actions">
+                <button class="btn-secondary" onclick="clearAll()">Clear</button>
+                <button class="btn-secondary" id="copy-btn" onclick="copyScore()">Copy</button>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            © 2026 Ari Hein &nbsp;·&nbsp;
+            <button class="footer-link" onclick="openModal('modal-julian')">Based on Julian Park's Design</button>
+            &nbsp;·&nbsp;
+            <button class="footer-link" onclick="openModal('modal-mit')">MIT License</button>
+        </div>
+    </div>
+
+    <!-- ── Freeze Overlay ── -->
+    <div id="freeze-overlay">
+        <img src="bouncy.png" alt="" />
+    </div>
+
+    <!-- ── Modal: Julian Park ── -->
+    <div class="modal-overlay" id="modal-julian">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Julian Park's Passion Calculator v2</span>
+                <button class="modal-close" onclick="closeModal('modal-julian')">✕ Close</button>
+            </div>
+            <div class="modal-body">
+                <div class="code-block"><span class="c-punct">&lt;!</span><span class="c-tag">DOCTYPE</span> <span class="c-attr">html</span><span class="c-punct">&gt;</span>
+<span class="c-punct">&lt;</span><span class="c-tag">html</span> <span class="c-attr">lang</span><span class="c-punct">=</span><span class="c-val">"en"</span><span class="c-punct">&gt;</span>
+  <span class="c-punct">&lt;</span><span class="c-tag">head</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">meta</span> <span class="c-attr">charset</span><span class="c-punct">=</span><span class="c-val">"utf-8"</span> <span class="c-punct">/&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">title</span><span class="c-punct">&gt;</span>Passion Calculator v2<span class="c-punct">&lt;/</span><span class="c-tag">title</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">style</span><span class="c-punct">&gt;</span>
+      <span class="c-fn">body</span> <span class="c-punct">{</span>
+        <span class="c-attr">font-family</span><span class="c-punct">:</span> <span class="c-val">helvetica, sans-serif</span><span class="c-punct">;</span>
+      <span class="c-punct">}</span>
+      <span class="c-fn">input</span> <span class="c-punct">{</span>
+        <span class="c-attr">width</span><span class="c-punct">:</span> <span class="c-val">200px</span><span class="c-punct">;</span>
+      <span class="c-punct">}</span>
+    <span class="c-punct">&lt;/</span><span class="c-tag">style</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">script</span><span class="c-punct">&gt;</span>
+      <span class="c-kw">function</span> <span class="c-fn">app</span><span class="c-punct">() {</span>
+        <span class="c-kw">let</span> score <span class="c-punct">=</span> <span class="c-val">0</span><span class="c-punct">;</span>
+        score <span class="c-punct">=</span> score <span class="c-punct">+</span> document<span class="c-punct">.</span><span class="c-fn">getElementById</span><span class="c-punct">(</span><span class="c-str">"formative"</span><span class="c-punct">).</span>value <span class="c-punct">*</span> <span class="c-val">0.2</span><span class="c-punct">;</span>
+        score <span class="c-punct">=</span> score <span class="c-punct">+</span> document<span class="c-punct">.</span><span class="c-fn">getElementById</span><span class="c-punct">(</span><span class="c-str">"summative"</span><span class="c-punct">).</span>value <span class="c-punct">*</span> <span class="c-val">0.8</span><span class="c-punct">;</span>
+        document<span class="c-punct">.</span><span class="c-fn">getElementById</span><span class="c-punct">(</span><span class="c-str">"text"</span><span class="c-punct">).</span>textContent <span class="c-punct">=</span> <span class="c-str">"Your passion is: "</span> <span class="c-punct">+</span> score<span class="c-punct">;</span>
+      <span class="c-punct">}</span>
+    <span class="c-punct">&lt;/</span><span class="c-tag">script</span><span class="c-punct">&gt;</span>
+  <span class="c-punct">&lt;/</span><span class="c-tag">head</span><span class="c-punct">&gt;</span>
+  <span class="c-punct">&lt;</span><span class="c-tag">body</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">h2</span><span class="c-punct">&gt;</span>Passion Calculator<span class="c-punct">&lt;/</span><span class="c-tag">h2</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">input</span> <span class="c-attr">type</span><span class="c-punct">=</span><span class="c-val">"number"</span> <span class="c-attr">id</span><span class="c-punct">=</span><span class="c-val">"formative"</span>
+      <span class="c-attr">placeholder</span><span class="c-punct">=</span><span class="c-val">"Enter your formative score"</span> <span class="c-punct">/&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">input</span> <span class="c-attr">type</span><span class="c-punct">=</span><span class="c-val">"number"</span> <span class="c-attr">id</span><span class="c-punct">=</span><span class="c-val">"summative"</span>
+      <span class="c-attr">placeholder</span><span class="c-punct">=</span><span class="c-val">"Enter your summative score"</span> <span class="c-punct">/&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">button</span> <span class="c-attr">onclick</span><span class="c-punct">=</span><span class="c-val">"app()"</span><span class="c-punct">&gt;</span>Calculate<span class="c-punct">&lt;/</span><span class="c-tag">button</span><span class="c-punct">&gt;</span>
+    <span class="c-punct">&lt;</span><span class="c-tag">h3</span> <span class="c-attr">id</span><span class="c-punct">=</span><span class="c-val">"text"</span><span class="c-punct">&gt;&lt;/</span><span class="c-tag">h3</span><span class="c-punct">&gt;</span>
+  <span class="c-punct">&lt;/</span><span class="c-tag">body</span><span class="c-punct">&gt;</span>
+<span class="c-punct">&lt;/</span><span class="c-tag">html</span><span class="c-punct">&gt;</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: MIT License ── -->
+    <div class="modal-overlay" id="modal-mit">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">MIT License</span>
+                <button class="modal-close" onclick="closeModal('modal-mit')">✕ Close</button>
+            </div>
+            <div class="modal-body">
+                <div class="license-text">
+                    <strong>Copyright 2026 Ari Hein</strong><br><br>
+                    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br><br>
+                    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br><br>
+                    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                </div>
+            </div>
+        </div>
+    </div>
+
+<button onclick="openSecretAuth()" style="position:fixed;bottom:0;left:0;width:48px;height:48px;background:transparent;border:none;cursor:default;z-index:998;margin:0;padding:0;outline:none;"></button>
+
+<div id="gate-overlay">
+    <button id="gate-btn" onclick="resumePage()">Start</button>
+</div>
+
+</body>
+</html>
